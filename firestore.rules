@@ -16,7 +16,7 @@ service cloud.firestore {
         && request.auth.token.email != null
         && request.auth.token.email_verified == true
         && request.auth.token.email
-           == "YOUR_ADMIN_EMAIL@gmail.com";
+           == "tripathivlogs39@gmail.com";
     }
 
 
