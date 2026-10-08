@@ -1,141 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
 
-<!DOCTYPE html>  
-<html lang="en">  
-<head>  
-    <meta charset="UTF-8">  
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-    <title>Login - Baba Plastic</title>  
-    <link rel="stylesheet" href="style.css">  
-</head>  
-<body>  
-    <header>  
-        <div class="container nav-container">  
-            <a href="index.html" class="logo cms-site-logo"><span class="cms-site-name">Baba Plastic</span></a>  
-        </div>  
-    </header>  
-  
-    <div class="container" style="max-width:400px; margin-top:50px; background:var(--white); padding:30px; border-radius:var(--radius); box-shadow:var(--shadow);">  
-          
-        <div id="login-step">  
-            <h2 style="margin-bottom:20px;">Customer Login</h2>  
-            <form id="login-form">  
-                <div class="form-group">  
-                    <label>Email</label>  
-                    <input type="email" id="email" class="form-control" required>  
-                </div>  
-                <div class="form-group">  
-                    <label>Password</label>  
-                    <input type="password" id="password" class="form-control" required>  
-                </div>  
-                <button type="submit" class="btn btn-primary" style="width:100%;" id="login-btn">Login</button>  
-            </form>  
-            <div style="margin-top:15px; text-align:center;">  
-                <a href="#" id="forgot-pass-link" style="color:var(--secondary); font-size:14px;">Forgot Password?</a><br><br>  
-                <a href="signup.html" style="font-size:14px;">Don't have an account? Sign up</a>  
-            </div>  
-        </div>  
-  
-        <div id="otp-step" style="display:none;">  
-            <h2 style="margin-bottom:20px;">Verify OTP</h2>  
-            <p style="font-size:14px; margin-bottom:15px;">Enter the 6-digit code sent to your email.</p>  
-            <form id="otp-form">  
-                <div class="form-group">  
-                    <input type="text" id="otp" class="form-control" maxlength="6" required>  
-                </div>  
-                <button type="submit" class="btn btn-primary" style="width:100%;" id="verify-btn">Verify & Login</button>  
-            </form>  
-        </div>  
-  
-        <div id="reset-step" style="display:none;">  
-            <h2 style="margin-bottom:20px;">Reset Password</h2>  
-            <form id="reset-form">  
-                <div class="form-group">  
-                    <label>OTP</label>  
-                    <input type="text" id="reset-otp" class="form-control" maxlength="6" required>  
-                </div>  
-                <div class="form-group">  
-                    <label>New Password</label>  
-                    <input type="password" id="new-password" class="form-control" required minlength="8">  
-                </div>  
-                <button type="submit" class="btn btn-primary" style="width:100%;">Update Password</button>  
-            </form>  
-        </div>  
-  
-    </div>  
-  
-    <script type="module" src="app.js"></script>  
-    <script type="module">  
-        import { AuthAPI } from './auth.js';  
-        let currentEmail = '';
-        let loginChallengeId = '';
-        let resetChallengeId = '';  
-  
-        document.getElementById('login-form').addEventListener('submit', async (e) => {  
-            e.preventDefault();  
-            const btn = document.getElementById('login-btn');  
-            currentEmail = document.getElementById('email').value.trim();  
-            const password = document.getElementById('password').value;  
-              
-            btn.disabled = true;  
-            btn.innerText = 'Verifying...';  
-            try {  
-                const result = await AuthAPI.requestLoginOTP(currentEmail, password);
-                loginChallengeId = result.challengeId || '';  
-                document.getElementById('login-step').style.display = 'none';  
-                document.getElementById('otp-step').style.display = 'block';  
-                window.showToast("OTP sent to email.");  
-            } catch (err) {  
-                window.showToast("Email and password is incorrect.", "error"); // Generic error  
-            } finally {  
-                btn.disabled = false;  
-                btn.innerText = 'Login';  
-            }  
-        });  
-  
-        document.getElementById('otp-form').addEventListener('submit', async (e) => {  
-            e.preventDefault();  
-            const otp = document.getElementById('otp').value.trim();  
-            const btn = document.getElementById('verify-btn');  
-            btn.disabled = true;  
-            try {  
-                await AuthAPI.submitOTP(currentEmail, otp, 'login', loginChallengeId);  
-                window.location.href = 'account.html';  
-            } catch (err) {  
-                window.showToast(err.message, "error");  
-                btn.disabled = false;  
-            }  
-        });  
-  
-        document.getElementById('forgot-pass-link').addEventListener('click', async (e) => {  
-            e.preventDefault();  
-            currentEmail = document.getElementById('email').value.trim();  
-            if(!currentEmail) return window.showToast("Please enter your email first.", "error");  
-              
-            try {  
-                const result = await AuthAPI.requestResetOTP(currentEmail);
-                resetChallengeId = result.challengeId || '';  
-                document.getElementById('login-step').style.display = 'none';  
-                document.getElementById('reset-step').style.display = 'block';  
-                window.showToast("If email exists, OTP is sent.");  
-            } catch(e) {  
-                window.showToast("If email exists, OTP is sent."); // Prevent enumeration  
-                document.getElementById('login-step').style.display = 'none';  
-                document.getElementById('reset-step').style.display = 'block';  
-            }  
-        });  
-  
-        document.getElementById('reset-form').addEventListener('submit', async (e) => {  
-            e.preventDefault();  
-            const otp = document.getElementById('reset-otp').value.trim();  
-            const newPass = document.getElementById('new-password').value;  
-            try {  
-                await AuthAPI.submitOTP(currentEmail, otp, 'reset', resetChallengeId, newPass);  
-                window.showToast("Password updated. Please login.");  
-                setTimeout(() => window.location.reload(), 2000);  
-            } catch(err) {  
-                window.showToast("Invalid OTP or error.", "error");  
-            }  
-        });  
-    </script>  
-</body>  
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Login - Baba Plastic</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <div class="container nav-container">
+
+        <a
+            href="index.html"
+            class="logo cms-site-logo"
+        >
+
+            <span class="cms-site-name">
+                Baba Plastic
+            </span>
+
+        </a>
+
+    </div>
+
+</header>
+
+
+<div
+    class="container"
+    style="
+        max-width:400px;
+        margin-top:50px;
+        background:var(--white);
+        padding:30px;
+        border-radius:var(--radius);
+        box-shadow:var(--shadow);
+    "
+>
+
+    <h2 style="margin-bottom:20px;">
+        Customer Login
+    </h2>
+
+
+    <form id="login-form">
+
+        <div class="form-group">
+
+            <label for="email">
+                Email
+            </label>
+
+            <input
+                type="email"
+                id="email"
+                class="form-control"
+                autocomplete="email"
+                required
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="password">
+                Password
+            </label>
+
+            <input
+                type="password"
+                id="password"
+                class="form-control"
+                autocomplete="current-password"
+                required
+            >
+
+        </div>
+
+
+        <button
+            type="submit"
+            class="btn btn-primary"
+            style="width:100%;"
+            id="login-btn"
+        >
+            Login
+        </button>
+
+    </form>
+
+
+    <div
+        style="
+            margin-top:15px;
+            text-align:center;
+        "
+    >
+
+        <a
+            href="#"
+            id="forgot-pass-link"
+            style="
+                color:var(--secondary);
+                font-size:14px;
+            "
+        >
+            Forgot Password?
+        </a>
+
+        <br>
+        <br>
+
+        <a
+            href="signup.html"
+            style="font-size:14px;"
+        >
+            Don't have an account? Sign up
+        </a>
+
+    </div>
+
+</div>
+
+
+<script
+    type="module"
+    src="app.js"
+></script>
+
+
+<script type="module">
+
+import { AuthAPI } from "./auth.js";
+
+
+const loginForm =
+    document.getElementById("login-form");
+
+const forgotLink =
+    document.getElementById("forgot-pass-link");
+
+
+loginForm.addEventListener(
+    "submit",
+    async (event) => {
+
+        event.preventDefault();
+
+
+        const btn =
+            document.getElementById(
+                "login-btn"
+            );
+
+
+        const email =
+            document
+                .getElementById("email")
+                .value
+                .trim();
+
+
+        const password =
+            document
+                .getElementById("password")
+                .value;
+
+
+        btn.disabled = true;
+
+        btn.textContent =
+            "Signing in...";
+
+
+        try {
+
+            await AuthAPI.login(
+                email,
+                password
+            );
+
+
+            window.location.href =
+                "account.html";
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            window.showToast(
+                "Email or password is incorrect.",
+                "error"
+            );
+
+        } finally {
+
+            btn.disabled = false;
+
+            btn.textContent =
+                "Login";
+        }
+
+    }
+);
+
+
+forgotLink.addEventListener(
+    "click",
+    async (event) => {
+
+        event.preventDefault();
+
+
+        const email =
+            document
+                .getElementById("email")
+                .value
+                .trim();
+
+
+        if (!email) {
+
+            window.showToast(
+                "Please enter your email first.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        try {
+
+            await AuthAPI.resetPassword(
+                email
+            );
+
+
+            window.showToast(
+                "Password reset email sent. Check your inbox."
+            );
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            window.showToast(
+                "Unable to send password reset email.",
+                "error"
+            );
+        }
+
+    }
+);
+
+</script>
+
+
+</body>
 </html>
