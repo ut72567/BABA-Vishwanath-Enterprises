@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>  
+<html lang="en">  
+<head>  
+    <meta charset="UTF-8">  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+    <title>Secure Admin Panel - Baba Plastic</title>  
+    <link rel="stylesheet" href="style.css">  
+    <link rel="stylesheet" href="admin.css">  
+</head>  
+<body>  
+  
+    <!-- Auth Protection Overlay -->  
+    <div id="admin-auth-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-light); z-index:9999; display:flex; justify-content:center; align-items:center;">  
+        <div style="background:var(--white); padding:40px; border-radius:var(--radius); box-shadow:var(--shadow); max-width:400px; width:100%;">  
+            <h2 style="text-align:center; color:var(--primary); margin-bottom:20px;">Admin Access</h2>  
+              
+            <form id="admin-login-form">  
+                <div class="form-group"><label>Admin Email</label><input type="email" id="a-email" class="form-control" required></div>  
+                <div class="form-group"><label>Password</label><input type="password" id="a-password" class="form-control" required></div>  
+                <button type="submit" class="btn btn-primary" style="width:100%;" id="a-login-btn">Secure Login</button>  
+            </form>  
+  
+            <p style="margin-top:15px;text-align:center;font-size:13px;">
+                First deployment? <a href="admin-bootstrap.html" style="color:var(--secondary);">Create the initial admin</a>.
+            </p>
+
+            <form id="admin-otp-form" style="display:none;">  
+                <p style="text-align:center; margin-bottom:15px; font-size:14px; color:var(--danger);">Admin OTP sent to email.</p>  
+                <div class="form-group"><label>OTP</label><input type="text" id="a-otp" class="form-control" required maxlength="6"></div>  
+                <button type="submit" class="btn btn-primary" style="width:100%;" id="a-verify-btn">Verify Identity</button>  
+            </form>  
+        </div>  
+    </div>  
+  
+    <!-- Protected Layout -->  
+    <div class="admin-layout" id="admin-dashboard-layout" style="display:none;">  
+        <aside class="admin-sidebar">  
+            <div class="logo">Admin Panel</div>  
+            <nav class="admin-menu">  
+                <a href="#" data-tab="tab-dashboard" class="active">Dashboard</a>  
+                <a href="#" data-tab="tab-products">Products</a>  
+                <a href="#" data-tab="tab-categories">Categories</a>  
+                <a href="#" data-tab="tab-orders">B2B Orders</a>  
+                <a href="#" data-tab="tab-cms">CMS & Pages</a>  
+                <a href="#" data-tab="tab-admins">Admin Access</a>  
+                <a href="#" id="admin-logout">Logout</a>  
+            </nav>  
+        </aside>  
+  
+        <main class="admin-content">  
+            <!-- Dashboard Tab -->  
+            <div id="tab-dashboard" class="tab-content active">  
+                <h1 style="margin-bottom:30px;">Overview</h1>  
+                <div class="grid grid-4">  
+                    <div class="card" style="padding:20px; text-align:center; border-top:4px solid var(--secondary);">  
+                        <h3 id="stat-prods">0</h3><p>Total Products</p>  
+                    </div>  
+                    <div class="card" style="padding:20px; text-align:center; border-top:4px solid var(--success);">  
+                        <h3 id="stat-orders">0</h3><p>Total Orders</p>  
+                    </div>  
+                </div>  
+            </div>  
+  
+            <!-- Products Tab -->  
+            <div id="tab-products" class="tab-content">  
+                <div class="admin-header">  
+                    <h2>Manage Products</h2>  
+                    <button class="btn btn-primary" onclick="window.openProductModal()">+ Add Product</button>  
+                </div>  
+                <div class="table-responsive">  
+                    <table id="admin-products-table">  
+                        <thead><tr><th>Image</th><th>Name</th><th>SKU</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead>  
+                        <tbody></tbody>  
+                    </table>  
+                </div>  
+            </div>  
+  
+            <!-- Categories Tab -->  
+            <div id="tab-categories" class="tab-content">  
+                <div class="admin-header">  
+                    <h2>Categories</h2>  
+                    <button class="btn btn-primary" onclick="window.openCatModal()">+ Add Category</button>  
+                </div>  
+                <div class="table-responsive">  
+                    <table id="admin-cats-table">  
+                        <thead><tr><th>Name</th><th>Order</th><th>Actions</th></tr></thead>  
+                        <tbody></tbody>  
+                    </table>  
+                </div>  
+            </div>  
+  
+            <!-- Orders Tab -->  
+            <div id="tab-orders" class="tab-content">  
+                <div class="admin-header"><h2>B2B Orders</h2></div>  
+                <div class="table-responsive">  
+                    <table id="admin-orders-table">  
+                        <thead><tr><th>ID</th><th>Company</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>  
+                        <tbody></tbody>  
+                    </table>  
+                </div>  
+            </div>  
+  
+            <!-- CMS Tab -->  
+            <div id="tab-cms" class="tab-content">  
+                <div class="admin-header"><h2>CMS / Site Settings</h2></div>  
+                <div style="background:var(--white); padding:30px; border-radius:var(--radius); box-shadow:var(--shadow);">  
+                    <form id="cms-settings-form">  
+                        <div class="grid grid-2" style="gap:20px; margin-bottom:20px;">  
+                            <div class="form-group"><label>Site Name</label><input type="text" id="cms-sitename" class="form-control"></div>  
+                            <div class="form-group"><label>Contact Phone</label><input type="text" id="cms-phone" class="form-control"></div>  
+                            <div class="form-group"><label>Contact Email</label><input type="email" id="cms-email" class="form-control"></div>  
+                            <div class="form-group"><label>Contact Address</label><input type="text" id="cms-address" class="form-control"></div><div class="form-group"><label>Working Hours</label><input type="text" id="cms-hours" class="form-control" placeholder="Mon-Sat, 9AM - 6PM"></div>  
+                        </div>  
+                        <button type="submit" class="btn btn-primary">Save Settings</button>  
+                    </form>  
+                </div>  
+            </div>  
+  
+            <!-- Admins Tab -->  
+            <div id="tab-admins" class="tab-content">  
+                <div class="admin-header">  
+                    <h2>Authorized Administrators</h2>  
+                </div>  
+                <div style="background:var(--white); padding:30px; border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:20px;">  
+                    <form id="add-admin-form" style="display:flex; gap:15px; align-items:flex-end;">  
+                        <div class="form-group" style="flex:1; margin-bottom:0;"><label>New Admin Email</label><input type="email" id="new-admin-email" class="form-control" required></div>  
+                        <button type="submit" class="btn btn-accent" id="add-admin-btn">Grant Access</button>  
+                    </form>  
+                    <p style="font-size:12px; color:var(--text-light); margin-top:10px;">Warning: This grants full database control.</p>  
+                </div>  
+                <div class="table-responsive">  
+                    <table id="admin-users-table">  
+                        <thead><tr><th>Email</th><th>Actions</th></tr></thead>  
+                        <tbody></tbody>  
+                    </table>  
+                </div>  
+            </div>  
+        </main>  
+    </div>  
+  
+    <!-- Product Modal -->  
+    <div class="modal-overlay" id="product-modal">  
+        <div class="modal" style="max-width:700px; max-height:90vh; overflow-y:auto;">  
+            <button class="modal-close" onclick="document.getElementById('product-modal').style.display='none'">&times;</button>  
+            <h2 id="pm-title" style="margin-bottom:20px;">Add Product</h2>  
+            <form id="product-form">  
+                <input type="hidden" id="pm-id">  
+                <div class="grid grid-2" style="gap:15px;">  
+                    <div class="form-group"><label>Name</label><input type="text" id="pm-name" class="form-control" required></div>  
+                    <div class="form-group"><label>SKU</label><input type="text" id="pm-sku" class="form-control" required></div>  
+                    <div class="form-group"><label>Category</label><select id="pm-category" class="form-control" required></select></div>  
+                    <div class="form-group"><label>Status</label>  
+                        <select id="pm-status" class="form-control">  
+                            <option value="direct_purchase">Direct Purchase</option>  
+                            <option value="bulk_enquiry">Bulk Enquiry</option>  
+                            <option value="showcase_only">Showcase Only</option>  
+                            <option value="out_of_stock">Out of Stock</option>  
+                        </select>  
+                    </div>  
+                    <div class="form-group"><label>Price (₹)</label><input type="number" id="pm-price" class="form-control" value="0"></div>  
+                    <div class="form-group"><label>MOQ</label><input type="number" id="pm-moq" class="form-control" value="100"></div>  
+                </div>  
+                <div class="form-group"><label>Image (Upload)</label><input type="file" id="pm-image-upload" class="form-control" accept="image/*"></div>  
+                <input type="hidden" id="pm-image-url">  
+                <div class="form-group"><label>Short Description</label><textarea id="pm-shortDesc" class="form-control"></textarea></div>  
+                <button type="submit" class="btn btn-primary" style="width:100%;" id="pm-save-btn">Save Product</button>  
+            </form>  
+        </div>  
+    </div>  
+  
+    <!-- Basic Toast UI for Admin -->  
+    <div id="toast-container"></div>  
+  
+    <script type="module" src="app.js"></script>  
+    <script type="module" src="admin.js"></script>  
+</body>  
+</html>

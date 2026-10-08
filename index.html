@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baba Plastic - B2B Industrial Plastic Manufacturing</title>
+    <meta name="description" content="Baba Plastic B2B industrial plastic manufacturing and bulk supply.">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+    <div class="container nav-container">
+        <a href="index.html" class="logo cms-site-logo"><span class="cms-site-name">Baba Plastic</span></a>
+        <button class="hamburger" id="hamburger" aria-label="Open menu">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+        </button>
+        <nav class="nav-links" id="nav-links">
+            <a href="index.html">Home</a>
+            <a href="categories.html">Categories</a>
+            <a href="products.html">Products</a>
+            <a href="about.html">About Us</a>
+            <a href="support.html">Support</a>
+            <div id="auth-nav-ui"></div>
+        </nav>
+    </div>
+</header>
+
+<section id="hero-slider" style="padding:0; position:relative; overflow:hidden; min-height:400px; background:#e2e8f0; display:flex; align-items:center; justify-content:center;"></section>
+
+<section class="container">
+    <h2 class="section-title">Latest Products</h2>
+    <div class="grid grid-4" id="latest-products-grid">Loading...</div>
+</section>
+
+<section class="container" style="background:var(--white); padding:40px; border-radius:var(--radius);">
+    <h2 class="section-title">Our Materials</h2>
+    <div class="grid grid-3" id="materials-grid"></div>
+</section>
+
+<footer>
+    <div class="container footer-grid">
+        <div>
+            <h3 class="cms-site-name">Baba Plastic</h3>
+            <p>Premium B2B plastic manufacturing for industrial needs.</p>
+        </div>
+        <div>
+            <h3>Quick Links</h3>
+            <p><a href="categories.html">Categories</a></p>
+            <p><a href="products.html">All Products</a></p>
+        </div>
+        <div>
+            <h3>Contact</h3>
+            <p class="cms-site-phone"></p>
+            <p class="cms-site-email"></p>
+        </div>
+    </div>
+    <div class="container" style="text-align:center; border-top:1px solid #4a5568; padding-top:20px;">
+        &copy; <span id="year"></span> Baba Plastic. All rights reserved.
+    </div>
+</footer>
+
+<script type="module" src="app.js"></script>
+<script type="module">
+import { getSliders, getProducts, getMaterials } from "./database.js";
+import { escapeHtml, safeUrl } from "./utils.js";
+
+const hero = document.getElementById("hero-slider");
+try {
+    const sliders = await getSliders();
+    if (sliders.length) {
+        const s = sliders[0];
+        const imageUrl = safeUrl(s.imageUrl, "");
+        if (imageUrl) {
+            hero.style.backgroundImage = `url("${imageUrl}")`;
+            hero.style.backgroundSize = "cover";
+            hero.style.backgroundPosition = "center";
+        }
+
+        const box = document.createElement("div");
+        box.style.cssText = "background:rgba(0,0,0,.65);padding:40px;border-radius:8px;text-align:center;color:white;max-width:900px;margin:20px;";
+        box.innerHTML = `
+            <h1 style="font-size:36px;margin-bottom:10px;">${escapeHtml(s.heading)}</h1>
+            <p style="margin-bottom:20px;font-size:18px;">${escapeHtml(s.description)}</p>
+        `;
+        if (s.buttonLink) {
+            const link = document.createElement("a");
+            link.className = "btn btn-accent";
+            link.href = safeUrl(s.buttonLink, "#");
+            link.textContent = s.buttonText || "Learn More";
+            box.appendChild(link);
+        }
+        hero.replaceChildren(box);
+    } else {
+        hero.innerHTML = '<div style="padding:60px;text-align:center;"><h1>Baba Plastic</h1><p>Reliable B2B plastic manufacturing and bulk supply.</p></div>';
+    }
+} catch (error) {
+    console.error(error);
+    hero.innerHTML = '<div style="padding:60px;text-align:center;"><h1>Baba Plastic</h1></div>';
+}
+
+try {
+    const products = await getProducts({ isLatest: true });
+    const grid = document.getElementById("latest-products-grid");
+    grid.innerHTML = products.slice(0, 8).map((p) => `
+        <a href="product.html?id=${encodeURIComponent(p.slug || p.id)}" class="card">
+            <img src="${safeUrl(p.images?.[0], "https://via.placeholder.com/600x400?text=Baba+Plastic")}" class="card-img" alt="${escapeHtml(p.name)}">
+            <div class="card-body">
+                <h3 class="card-title">${escapeHtml(p.name)}</h3>
+                <p>MOQ: ${escapeHtml(p.moq)}</p>
+                ${p.status === "direct_purchase"
+                    ? `<span class="badge badge-blue">₹${escapeHtml(p.price)}/${escapeHtml(p.unit || "unit")}</span>`
+                    : `<span class="badge badge-red">Bulk Enquiry</span>`}
+            </div>
+        </a>
+    `).join("") || "<p>No products available.</p>";
+} catch (error) {
+    document.getElementById("latest-products-grid").textContent = "Unable to load products.";
+}
+
+try {
+    const materials = await getMaterials();
+    document.getElementById("materials-grid").innerHTML = materials.map((m) => `
+        <div class="card" style="text-align:center;padding:20px;">
+            <img src="${safeUrl(m.imageUrl, "https://via.placeholder.com/100?text=Material")}" style="width:60px;height:60px;margin-bottom:15px;" alt="">
+            <h3>${escapeHtml(m.name)}</h3>
+            <p style="font-size:14px;">${escapeHtml(m.description)}</p>
+        </div>
+    `).join("") || "<p>No material information available.</p>";
+} catch (error) {
+    document.getElementById("materials-grid").textContent = "Unable to load materials.";
+}
+</script>
+</body>
+</html>

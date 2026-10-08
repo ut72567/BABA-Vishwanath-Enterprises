@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - Baba Plastic</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+    <div class="container nav-container">
+        <a href="index.html" class="logo cms-site-logo"><span class="cms-site-name">Baba Plastic</span></a>
+        <button class="hamburger" id="hamburger" aria-label="Open menu">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+        </button>
+        <nav class="nav-links" id="nav-links">
+            <a href="index.html">Home</a><a href="categories.html">Categories</a><a href="products.html">Products</a>
+            <a href="about.html" style="color:var(--secondary);">About Us</a><a href="support.html">Support</a>
+            <div id="auth-nav-ui"></div>
+        </nav>
+    </div>
+</header>
+
+<main class="container" style="margin-top:40px;margin-bottom:60px;">
+    <h1 class="section-title">About Our Company</h1>
+    <div id="about-content" style="background:var(--white);padding:40px;border-radius:var(--radius);box-shadow:var(--shadow);">
+        <p style="text-align:center;">Loading company profile...</p>
+    </div>
+
+    <h2 class="section-title" style="margin-top:60px;">Our Leadership</h2>
+    <div class="grid grid-3" id="leadership-grid"></div>
+</main>
+
+<footer>
+    <div class="container" style="text-align:center;">&copy; <span id="year"></span> <span class="cms-site-name">Baba Plastic</span></div>
+</footer>
+
+<script type="module" src="app.js"></script>
+<script type="module">
+import { getAboutContent } from "./database.js";
+import { escapeHtml, safeUrl } from "./utils.js";
+
+try {
+    const about = await getAboutContent();
+    if (about) {
+        document.getElementById("about-content").innerHTML = `
+            <h2 style="color:var(--primary);margin-bottom:15px;">Our Vision</h2>
+            <p style="margin-bottom:20px;">${escapeHtml(about.vision)}</p>
+            <h2 style="color:var(--primary);margin-bottom:15px;">Our Mission</h2>
+            <p style="margin-bottom:20px;">${escapeHtml(about.mission)}</p>
+            <h2 style="color:var(--primary);margin-bottom:15px;">Company History</h2>
+            <p>${escapeHtml(about.history)}</p>
+        `;
+
+        const leaders = [
+            ["founderName", "founderRole", "founderBio", "founderImage", "Founder"],
+            ["coFounderName", "coFounderRole", "coFounderBio", "coFounderImage", "Co-Founder"],
+            ["ceoName", "ceoRole", "ceoBio", "ceoImage", "CEO"]
+        ];
+
+        document.getElementById("leadership-grid").innerHTML = leaders
+            .filter(([name]) => about[name])
+            .map(([name, role, bio, image, defaultRole]) => `
+                <div class="card" style="text-align:center;padding:30px;">
+                    <img src="${safeUrl(about[image], "https://via.placeholder.com/150?text=Leader")}" style="width:120px;height:120px;border-radius:50%;object-fit:cover;margin:0 auto 15px auto;" alt="">
+                    <h3 style="color:var(--primary);">${escapeHtml(about[name])}</h3>
+                    <p style="color:var(--secondary);font-weight:bold;margin-bottom:15px;">${escapeHtml(about[role] || defaultRole)}</p>
+                    <p style="font-size:14px;">${escapeHtml(about[bio])}</p>
+                </div>
+            `).join("");
+    } else {
+        document.getElementById("about-content").textContent = "Company profile is not available yet.";
+    }
+} catch (error) {
+    console.error(error);
+    document.getElementById("about-content").textContent = "Unable to load company profile.";
+}
+</script>
+</body>
+</html>

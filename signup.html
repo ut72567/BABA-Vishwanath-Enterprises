@@ -1,0 +1,104 @@
+
+<!DOCTYPE html>  
+<html lang="en">  
+<head>  
+    <meta charset="UTF-8">  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+    <title>Signup - Baba Plastic</title>  
+    <link rel="stylesheet" href="style.css">  
+</head>  
+<body>  
+    <header>  
+        <div class="container nav-container">  
+            <a href="index.html" class="logo cms-site-logo"><span class="cms-site-name">Baba Plastic</span></a>  
+        </div>  
+    </header>  
+  
+    <div class="container" style="max-width:400px; margin-top:50px; background:var(--white); padding:30px; border-radius:var(--radius); box-shadow:var(--shadow);">  
+          
+        <div id="signup-step">  
+            <h2 style="margin-bottom:20px;">Create B2B Account</h2>  
+            <form id="signup-form">  
+                <div class="form-group">  
+                    <label>Email</label>  
+                    <input type="email" id="email" class="form-control" required>  
+                </div>  
+                <div class="form-group">  
+                    <label>Password</label>  
+                    <input type="password" id="password" class="form-control" required minlength="8">  
+                </div>  
+                <div class="form-group">  
+                    <label>Confirm Password</label>  
+                    <input type="password" id="cpassword" class="form-control" required minlength="8">  
+                </div>  
+                <button type="submit" class="btn btn-primary" style="width:100%;" id="signup-btn">Create Account</button>  
+            </form>  
+            <div style="margin-top:15px; text-align:center;">  
+                <a href="login.html" style="font-size:14px;">Already have an account? Login</a>  
+            </div>  
+        </div>  
+  
+        <div id="otp-step" style="display:none;">  
+            <h2 style="margin-bottom:20px;">Verify OTP</h2>  
+            <p style="font-size:14px; margin-bottom:15px;">Enter the 6-digit code sent to your email.</p>  
+            <form id="otp-form">  
+                <div class="form-group">  
+                    <input type="text" id="otp" class="form-control" maxlength="6" required>  
+                </div>  
+                <button type="submit" class="btn btn-primary" style="width:100%;" id="verify-btn">Verify & Create Account</button>  
+            </form>  
+        </div>  
+    </div>  
+  
+    <script type="module" src="app.js"></script>  
+    <script type="module">  
+        import { AuthAPI } from './auth.js';  
+        let currentEmail = '';
+        let signupChallengeId = '';  
+  
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {  
+            e.preventDefault();  
+            const btn = document.getElementById('signup-btn');  
+            currentEmail = document.getElementById('email').value.trim();  
+            const password = document.getElementById('password').value;  
+            const cpassword = document.getElementById('cpassword').value;  
+              
+            if(password !== cpassword) return window.showToast("Passwords do not match", "error");  
+  
+            btn.disabled = true;  
+            btn.innerText = 'Processing...';  
+            try {  
+                const result = await AuthAPI.requestSignupOTP(currentEmail, password);
+                signupChallengeId = result.challengeId || '';  
+                document.getElementById('signup-step').style.display = 'none';  
+                document.getElementById('otp-step').style.display = 'block';  
+                window.showToast("OTP sent to email.");  
+            } catch (err) {  
+                if(err.message.includes('already registered')) {  
+                    window.showToast("Email already registered. Redirecting to login...", "error");  
+                    setTimeout(() => window.location.href = 'login.html', 2000);  
+                } else {  
+                    window.showToast(err.message, "error");  
+                }  
+            } finally {  
+                btn.disabled = false;  
+                btn.innerText = 'Create Account';  
+            }  
+        });  
+  
+        document.getElementById('otp-form').addEventListener('submit', async (e) => {  
+            e.preventDefault();  
+            const otp = document.getElementById('otp').value.trim();  
+            const btn = document.getElementById('verify-btn');  
+            btn.disabled = true;  
+            try {  
+                await AuthAPI.submitOTP(currentEmail, otp, 'signup', signupChallengeId);  
+                window.location.href = 'account.html';  
+            } catch (err) {  
+                window.showToast(err.message, "error");  
+                btn.disabled = false;  
+            }  
+        });  
+    </script>  
+</body>  
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details - Baba Plastic</title>
+    <meta name="description" content="Baba Plastic product details and B2B ordering.">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+    <div class="container nav-container">
+        <a href="index.html" class="logo cms-site-logo"><span class="cms-site-name">Baba Plastic</span></a>
+        <nav class="nav-links"><a href="products.html">Products</a><div id="auth-nav-ui"></div></nav>
+    </div>
+</header>
+
+<main class="container" style="margin-top:40px;">
+    <div class="grid product-detail-grid" id="product-container">Loading...</div>
+</main>
+
+<div class="modal-overlay" id="action-modal">
+    <div class="modal">
+        <button class="modal-close" id="modal-close" type="button" aria-label="Close">&times;</button>
+        <h2 id="modal-title" style="margin-bottom:20px;">Action</h2>
+        <form id="action-form">
+            <div class="form-group"><label for="m-company">Company Name</label><input type="text" id="m-company" class="form-control" required maxlength="150"></div>
+            <div class="form-group"><label for="m-phone">Phone</label><input type="text" id="m-phone" class="form-control" required maxlength="30"></div>
+            <div class="form-group" id="address-group" style="display:none;"><label for="m-address">Delivery Address</label><textarea id="m-address" class="form-control" maxlength="1000"></textarea></div>
+            <div class="form-group" id="msg-group" style="display:none;"><label for="m-msg">Message</label><textarea id="m-msg" class="form-control" maxlength="2000"></textarea></div>
+            <button type="submit" class="btn btn-primary" style="width:100%;" id="m-submit-btn">Submit</button>
+        </form>
+    </div>
+</div>
+
+<script type="module" src="app.js"></script>
+<script type="module">
+import { getProductBySlug, submitB2BOrder, submitEnquiry } from "./database.js";
+import { setSEO, injectProductSchema } from "./seo.js";
+import { auth } from "./firebase.js";
+import { escapeHtml, safeUrl } from "./utils.js";
+
+let currentProduct = null;
+let actionType = null;
+const slug = new URLSearchParams(window.location.search).get("id");
+
+function openModal(type) {
+    if (!currentProduct) return;
+    if (type === "order" && !auth.currentUser) {
+        window.showToast("Please login to place B2B orders.", "error");
+        setTimeout(() => { window.location.href = "login.html"; }, 1000);
+        return;
+    }
+    actionType = type;
+    document.getElementById("action-modal").style.display = "flex";
+    document.getElementById("address-group").style.display = type === "order" ? "block" : "none";
+    document.getElementById("msg-group").style.display = type === "enquiry" ? "block" : "none";
+    document.getElementById("modal-title").textContent = type === "order" ? "Confirm B2B Order" : "Bulk Enquiry";
+}
+window.openModal = openModal;
+
+document.getElementById("modal-close").addEventListener("click", () => {
+    document.getElementById("action-modal").style.display = "none";
+});
+
+try {
+    const product = await getProductBySlug(slug);
+    if (!product) {
+        document.getElementById("product-container").textContent = "Product not found.";
+    } else {
+        currentProduct = product;
+        setSEO({
+            title: product.seoTitle || product.name,
+            description: product.seoDescription || product.shortDesc || product.description,
+            keywords: product.seoKeywords,
+            ogImage: product.images?.[0]
+        });
+        injectProductSchema(product);
+
+        const wrapper = document.getElementById("product-container");
+        const imageUrl = safeUrl(product.images?.[0], "https://via.placeholder.com/800x600?text=Baba+Plastic");
+        wrapper.innerHTML = `
+            <div>
+                <img src="${imageUrl}" style="width:100%;border-radius:var(--radius);box-shadow:var(--shadow);" alt="${escapeHtml(product.name)}">
+            </div>
+            <div>
+                <h1 style="color:var(--primary);">${escapeHtml(product.name)}</h1>
+                <p style="color:var(--text-light);margin-bottom:20px;">Category: ${escapeHtml(product.category)}</p>
+                <p>${escapeHtml(product.shortDesc || product.description || "")}</p>
+                <div id="product-action"></div>
+                <div style="margin-top:40px;">
+                    <h3>Description</h3>
+                    <p>${escapeHtml(product.fullDesc || product.description || "")}</p>
+                    <h3 style="margin-top:20px;">Material</h3>
+                    <p>${escapeHtml(product.material || "—")}</p>
+                </div>
+            </div>
+        `;
+
+        const action = document.getElementById("product-action");
+        if (product.status === "direct_purchase") {
+            action.innerHTML = `
+                <div style="background:#edf2f7;padding:20px;border-radius:8px;margin-top:20px;">
+                    <p style="font-size:24px;font-weight:bold;color:var(--primary);">₹${escapeHtml(product.price)}/${escapeHtml(product.unit || "unit")}</p>
+                    <p style="margin-bottom:15px;font-size:14px;color:var(--danger);">Minimum Order Quantity (MOQ): ${escapeHtml(product.moq)}</p>
+                    <input type="number" id="qty-input" class="form-control" value="${escapeHtml(product.moq)}" min="${escapeHtml(product.moq)}" step="1" style="width:120px;display:inline-block;margin-right:10px;">
+                    <button class="btn btn-primary" type="button" id="order-button">Place Bulk Order</button>
+                </div>`;
+            document.getElementById("order-button").addEventListener("click", () => openModal("order"));
+        } else if (product.status === "bulk_enquiry") {
+            const button = document.createElement("button");
+            button.className = "btn btn-primary";
+            button.style.marginTop = "20px";
+            button.type = "button";
+            button.textContent = "Request Quote";
+            button.addEventListener("click", () => openModal("enquiry"));
+            action.appendChild(button);
+        } else if (product.status === "showcase_only") {
+            action.innerHTML = '<p style="margin-top:20px;font-weight:bold;">For more information, contact support.</p>';
+        } else {
+            action.innerHTML = '<button class="btn btn-outline" style="margin-top:20px;" disabled>Out of Stock</button>';
+        }
+    }
+} catch (error) {
+    console.error(error);
+    document.getElementById("product-container").textContent = "Unable to load product.";
+}
+
+document.getElementById("action-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = document.getElementById("m-submit-btn");
+    button.disabled = true;
+
+    try {
+        const companyName = document.getElementById("m-company").value.trim();
+        const phone = document.getElementById("m-phone").value.trim();
+
+        if (actionType === "order") {
+            const qty = Number(document.getElementById("qty-input").value);
+            if (!Number.isSafeInteger(qty) || qty < Number(currentProduct.moq)) {
+                throw new Error("Quantity below MOQ.");
+            }
+
+            await submitB2BOrder({
+                items: [{ productId: currentProduct.id, qty }],
+                companyName,
+                phone,
+                deliveryAddress: document.getElementById("m-address").value.trim()
+            });
+            window.showToast("Order placed successfully!");
+        } else {
+            await submitEnquiry({
+                productId: currentProduct.id,
+                qty: Number(currentProduct.moq) || 0,
+                companyName,
+                phone,
+                message: document.getElementById("m-msg").value.trim()
+            });
+            window.showToast("Enquiry submitted!");
+        }
+
+        document.getElementById("action-modal").style.display = "none";
+        event.target.reset();
+    } catch (error) {
+        window.showToast(error?.message || "Request failed.", "error");
+    } finally {
+        button.disabled = false;
+    }
+});
+</script>
+</body>
+</html>

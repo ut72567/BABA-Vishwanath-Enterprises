@@ -1,0 +1,83 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    match /_secure_otps/{challengeId} {
+      allow read, write: if false;
+    }
+
+    match /_otp_rate_limits/{emailHash} {
+      allow read, write: if false;
+    }
+
+    match /_system/{docId} {
+      allow read, write: if false;
+    }
+
+    match /admins/{email} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /materials/{materialId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /sliders/{sliderId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /siteSettings/{settingsId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /aboutContent/{contentId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /orders/{orderId} {
+      allow create, update, delete: if false;
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.customerId == request.auth.uid);
+    }
+
+    match /enquiries/{enquiryId} {
+      allow create: if false;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow create: if signedIn() && request.auth.uid == userId;
+      allow read, update: if isAdmin()
+        || (signedIn() && request.auth.uid == userId);
+      allow delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

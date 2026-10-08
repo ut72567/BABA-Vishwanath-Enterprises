@@ -1,0 +1,7 @@
+
+User-agent: *  
+Allow: /  
+Disallow: /admin.html  
+Disallow: /account.html  
+  
+Sitemap: https://www.babaplastic.com/sitemap.xml

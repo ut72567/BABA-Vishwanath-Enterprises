@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Initial Admin Setup - Baba Plastic</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="container nav-container">
+            <a href="index.html" class="logo">Baba Plastic</a>
+        </div>
+    </header>
+
+    <main class="container" style="max-width:520px; margin:60px auto;">
+        <div style="background:var(--white); padding:30px; border-radius:var(--radius); box-shadow:var(--shadow);">
+            <h1 style="color:var(--primary); margin-bottom:10px;">Initial Admin Setup</h1>
+            <p style="color:var(--text-light); margin-bottom:25px;">
+                Use this page only once after deployment. The server accepts the bootstrap key and locks this setup after the first successful admin creation.
+            </p>
+            <form id="bootstrap-form">
+                <div class="form-group">
+                    <label for="bootstrap-email">Admin Email</label>
+                    <input id="bootstrap-email" class="form-control" type="email" autocomplete="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="bootstrap-password">Admin Password</label>
+                    <input id="bootstrap-password" class="form-control" type="password" minlength="8" maxlength="128" autocomplete="new-password" required>
+                </div>
+                <div class="form-group">
+                    <label for="bootstrap-key">Bootstrap Key</label>
+                    <input id="bootstrap-key" class="form-control" type="password" minlength="20" autocomplete="off" required>
+                </div>
+                <button class="btn btn-primary" id="bootstrap-btn" type="submit" style="width:100%;">
+                    Create Initial Admin
+                </button>
+            </form>
+            <p style="margin-top:20px; font-size:13px; color:var(--text-light);">
+                After setup, use <a href="admin.html" style="color:var(--secondary);">Admin Panel</a>. Do not share the bootstrap key.
+            </p>
+        </div>
+    </main>
+
+    <div id="toast-container"></div>
+    <script type="module" src="app.js"></script>
+    <script type="module" src="bootstrap.js"></script>
+</body>
+</html>
