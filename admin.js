@@ -24,24 +24,15 @@ import {
 } from "./utils.js";
 
 
-/*
-====================================================
-ADMIN EMAIL
-====================================================
-IMPORTANT:
-
-Replace this with the SAME email that exists
-inside Firebase Authentication.
-====================================================
-*/
+/* ==================================================
+   ADMIN
+================================================== */
 
 const ADMIN_EMAIL = "tripathivlogs39@gmail.com";
-
 
 let isAdminSession = false;
 let cachedProducts = new Map();
 let cachedOrders = new Map();
-
 
 const $ = (id) => document.getElementById(id);
 
@@ -51,9 +42,7 @@ const $ = (id) => document.getElementById(id);
 ================================================== */
 
 document.querySelectorAll(".admin-menu a[data-tab]").forEach((tab) => {
-
     tab.addEventListener("click", (event) => {
-
         event.preventDefault();
 
         document
@@ -68,7 +57,6 @@ document.querySelectorAll(".admin-menu a[data-tab]").forEach((tab) => {
 
         $(tab.dataset.tab)?.classList.add("active");
     });
-
 });
 
 
@@ -76,46 +64,33 @@ document.querySelectorAll(".admin-menu a[data-tab]").forEach((tab) => {
    ADMIN LOGIN
 ================================================== */
 
-$("admin-login-form").addEventListener("submit", async (event) => {
-
+$("admin-login-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const button = $("a-login-btn");
 
-    const email = $("a-email")
-        .value
-        .trim()
-        .toLowerCase();
-
+    const email = $("a-email").value.trim().toLowerCase();
     const password = $("a-password").value;
 
-
     if (email !== ADMIN_EMAIL.toLowerCase()) {
-
         window.showToast(
             "This email is not authorized as admin.",
             "error"
         );
-
         return;
     }
-
 
     button.disabled = true;
     button.textContent = "Signing in...";
 
-
     try {
-
         await signInWithEmailAndPassword(
             auth,
             email,
             password
         );
-
     } catch (error) {
-
-        console.error(error);
+        console.error("Admin login error:", error);
 
         window.showToast(
             "Incorrect admin email or password.",
@@ -125,7 +100,6 @@ $("admin-login-form").addEventListener("submit", async (event) => {
         button.disabled = false;
         button.textContent = "Secure Login";
     }
-
 });
 
 
@@ -133,17 +107,12 @@ $("admin-login-form").addEventListener("submit", async (event) => {
    LOGOUT
 ================================================== */
 
-$("admin-logout").addEventListener(
-    "click",
-    async (event) => {
+$("admin-logout")?.addEventListener("click", async (event) => {
+    event.preventDefault();
 
-        event.preventDefault();
-
-        await signOut(auth);
-
-        window.location.reload();
-    }
-);
+    await signOut(auth);
+    window.location.reload();
+});
 
 
 /* ==================================================
@@ -151,48 +120,37 @@ $("admin-logout").addEventListener(
 ================================================== */
 
 onAuthStateChanged(auth, async (user) => {
-
     if (!user) return;
-
 
     if (
         !user.email ||
         user.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()
     ) {
-
         window.showToast(
             "Not authorized.",
             "error"
         );
 
         await signOut(auth);
-
         return;
     }
 
-
     try {
-
         isAdminSession = true;
 
         $("admin-auth-overlay").style.display = "none";
-
         $("admin-dashboard-layout").style.display = "flex";
 
         await loadAdminData();
 
     } catch (error) {
-
-        console.error(error);
+        console.error("Admin initialization error:", error);
 
         window.showToast(
             "Unable to load admin panel.",
             "error"
         );
-
-        await signOut(auth);
     }
-
 });
 
 
@@ -201,34 +159,28 @@ onAuthStateChanged(auth, async (user) => {
 ================================================== */
 
 async function loadAdminData() {
-
     if (!isAdminSession) return;
-
 
     try {
 
-        const [
-            productsSnap,
-            ordersSnap,
-            catsSnap,
-            settingsSnap,
-            adminsSnap
-        ] = await Promise.all([
+        const productsSnap =
+            await getDocs(collection(db, "products"));
 
-            getDocs(collection(db, "products")),
+        const ordersSnap =
+            await getDocs(collection(db, "orders"));
 
-            getDocs(collection(db, "orders")),
+        const catsSnap =
+            await getDocs(collection(db, "categories"));
 
-            getDocs(collection(db, "categories")),
-
-            getDoc(
+        const settingsSnap =
+            await getDoc(
                 doc(db, "siteSettings", "main")
-            ),
+            );
 
-            getDocs(collection(db, "admins"))
 
-        ]);
-
+        /* ==========================================
+           CACHE PRODUCTS
+        ========================================== */
 
         cachedProducts = new Map(
             productsSnap.docs.map((item) => [
@@ -241,6 +193,10 @@ async function loadAdminData() {
         );
 
 
+        /* ==========================================
+           CACHE ORDERS
+        ========================================== */
+
         cachedOrders = new Map(
             ordersSnap.docs.map((item) => [
                 item.id,
@@ -252,224 +208,270 @@ async function loadAdminData() {
         );
 
 
-        $("stat-prods").textContent =
-            String(productsSnap.size);
+        /* ==========================================
+           DASHBOARD STATS
+        ========================================== */
 
-        $("stat-orders").textContent =
-            String(ordersSnap.size);
+        if ($("stat-prods")) {
+            $("stat-prods").textContent =
+                String(productsSnap.size);
+        }
 
-
-        /* PRODUCTS */
-
-        $("admin-products-table")
-            .querySelector("tbody")
-            .innerHTML =
-            productsSnap.docs.map((item) => {
-
-                const p = item.data();
-
-                return `
-                    <tr>
-
-                        <td>
-                            <img
-                                src="${safeUrl(
-                                    p.images?.[0],
-                                    "https://via.placeholder.com/50"
-                                )}"
-                                width="40"
-                                height="40"
-                                style="object-fit:cover;border-radius:4px;"
-                                alt=""
-                            >
-                        </td>
-
-                        <td>
-                            ${escapeHtml(p.name || "")}
-                        </td>
-
-                        <td>
-                            ${escapeHtml(p.sku || "")}
-                        </td>
-
-                        <td>
-                            ${escapeHtml(p.category || "")}
-                        </td>
-
-                        <td>
-                            ${escapeHtml(p.status || "")}
-                        </td>
-
-                        <td>
-
-                            <button
-                                class="action-btn"
-                                type="button"
-                                data-edit-product="${escapeHtml(item.id)}"
-                            >
-                                Edit
-                            </button>
-
-                            <button
-                                class="action-btn delete"
-                                type="button"
-                                data-delete-product="${escapeHtml(item.id)}"
-                            >
-                                Delete
-                            </button>
-
-                        </td>
-
-                    </tr>
-                `;
-
-            }).join("") ||
-            '<tr><td colspan="6">No products.</td></tr>';
+        if ($("stat-orders")) {
+            $("stat-orders").textContent =
+                String(ordersSnap.size);
+        }
 
 
-        /* ORDERS */
+        /* ==========================================
+           PRODUCTS
+        ========================================== */
 
-        $("admin-orders-table")
-            .querySelector("tbody")
-            .innerHTML =
-            ordersSnap.docs.map((item) => {
+        const productTable =
+            $("admin-products-table")?.querySelector("tbody");
 
-                const o = item.data();
+        if (productTable) {
 
-                return `
-                    <tr>
+            productTable.innerHTML =
+                productsSnap.docs.map((item) => {
 
-                        <td>
-                            ${escapeHtml(item.id)}
-                        </td>
-
-                        <td>
-                            ${escapeHtml(o.companyName || "")}
-                        </td>
-
-                        <td>
-                            ₹${escapeHtml(
-                                String(o.totalAmount || 0)
-                            )}
-                        </td>
-
-                        <td>
-                            ${escapeHtml(o.status || "")}
-                        </td>
-
-                        <td>
-
-                            <button
-                                class="action-btn"
-                                type="button"
-                                data-view-order="${escapeHtml(item.id)}"
-                            >
-                                View
-                            </button>
-
-                        </td>
-
-                    </tr>
-                `;
-
-            }).join("") ||
-            '<tr><td colspan="5">No orders.</td></tr>';
-
-
-        /* CATEGORIES */
-
-        $("admin-cats-table")
-            .querySelector("tbody")
-            .innerHTML =
-            catsSnap.docs.map((item) => {
-
-                const c = item.data();
-
-                return `
-                    <tr>
-
-                        <td>
-                            ${escapeHtml(c.name || "")}
-                        </td>
-
-                        <td>
-                            ${escapeHtml(
-                                String(c.displayOrder ?? 0)
-                            )}
-                        </td>
-
-                        <td>
-
-                            <button
-                                class="action-btn delete"
-                                type="button"
-                                data-delete-category="${escapeHtml(item.id)}"
-                            >
-                                Delete
-                            </button>
-
-                        </td>
-
-                    </tr>
-                `;
-
-            }).join("") ||
-            '<tr><td colspan="3">No categories.</td></tr>';
-
-
-        /* CATEGORY DROPDOWN */
-
-        $("pm-category").innerHTML =
-            catsSnap.docs
-                .sort(
-                    (a, b) =>
-                        Number(a.data().displayOrder || 0) -
-                        Number(b.data().displayOrder || 0)
-                )
-                .map((item) => {
-
-                    const name =
-                        item.data().name || "";
+                    const p = item.data();
 
                     return `
-                        <option value="${escapeHtml(name)}">
-                            ${escapeHtml(name)}
-                        </option>
+                        <tr>
+
+                            <td>
+                                <img
+                                    src="${safeUrl(
+                                        p.images?.[0],
+                                        "https://via.placeholder.com/50"
+                                    )}"
+                                    width="40"
+                                    height="40"
+                                    style="object-fit:cover;border-radius:4px;"
+                                    alt=""
+                                >
+                            </td>
+
+                            <td>
+                                ${escapeHtml(p.name || "")}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(p.sku || "")}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(p.category || "")}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(p.status || "")}
+                            </td>
+
+                            <td>
+
+                                <button
+                                    class="action-btn"
+                                    type="button"
+                                    data-edit-product="${escapeHtml(item.id)}"
+                                >
+                                    Edit
+                                </button>
+
+                                <button
+                                    class="action-btn delete"
+                                    type="button"
+                                    data-delete-product="${escapeHtml(item.id)}"
+                                >
+                                    Delete
+                                </button>
+
+                            </td>
+
+                        </tr>
                     `;
 
-                })
-                .join("");
+                }).join("") ||
+                '<tr><td colspan="6">No products.</td></tr>';
+        }
 
 
-        /* SETTINGS */
+        /* ==========================================
+           ORDERS
+        ========================================== */
+
+        const orderTable =
+            $("admin-orders-table")?.querySelector("tbody");
+
+        if (orderTable) {
+
+            orderTable.innerHTML =
+                ordersSnap.docs.map((item) => {
+
+                    const o = item.data();
+
+                    return `
+                        <tr>
+
+                            <td>
+                                ${escapeHtml(item.id)}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(o.companyName || "")}
+                            </td>
+
+                            <td>
+                                ₹${escapeHtml(
+                                    String(o.totalAmount || 0)
+                                )}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(o.status || "")}
+                            </td>
+
+                            <td>
+
+                                <button
+                                    class="action-btn"
+                                    type="button"
+                                    data-view-order="${escapeHtml(item.id)}"
+                                >
+                                    View
+                                </button>
+
+                            </td>
+
+                        </tr>
+                    `;
+
+                }).join("") ||
+                '<tr><td colspan="5">No orders.</td></tr>';
+        }
+
+
+        /* ==========================================
+           CATEGORIES
+        ========================================== */
+
+        const catTable =
+            $("admin-cats-table")?.querySelector("tbody");
+
+        if (catTable) {
+
+            catTable.innerHTML =
+                catsSnap.docs.map((item) => {
+
+                    const c = item.data();
+
+                    return `
+                        <tr>
+
+                            <td>
+                                ${escapeHtml(c.name || "")}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(
+                                    String(c.displayOrder ?? 0)
+                                )}
+                            </td>
+
+                            <td>
+
+                                <button
+                                    class="action-btn delete"
+                                    type="button"
+                                    data-delete-category="${escapeHtml(item.id)}"
+                                >
+                                    Delete
+                                </button>
+
+                            </td>
+
+                        </tr>
+                    `;
+
+                }).join("") ||
+                '<tr><td colspan="3">No categories.</td></tr>';
+        }
+
+
+        /* ==========================================
+           CATEGORY DROPDOWN
+        ========================================== */
+
+        const categorySelect = $("pm-category");
+
+        if (categorySelect) {
+
+            categorySelect.innerHTML =
+                '<option value="">Select category</option>' +
+                catsSnap.docs
+                    .sort(
+                        (a, b) =>
+                            Number(a.data().displayOrder || 0) -
+                            Number(b.data().displayOrder || 0)
+                    )
+                    .map((item) => {
+
+                        const name =
+                            item.data().name || "";
+
+                        return `
+                            <option value="${escapeHtml(name)}">
+                                ${escapeHtml(name)}
+                            </option>
+                        `;
+
+                    })
+                    .join("");
+        }
+
+
+        /* ==========================================
+           SETTINGS
+        ========================================== */
 
         if (settingsSnap.exists()) {
 
             const settings =
                 settingsSnap.data();
 
-            $("cms-sitename").value =
-                settings.siteName || "";
+            if ($("cms-sitename"))
+                $("cms-sitename").value =
+                    settings.siteName || "";
 
-            $("cms-phone").value =
-                settings.contactPhone || "";
+            if ($("cms-phone"))
+                $("cms-phone").value =
+                    settings.contactPhone || "";
 
-            $("cms-email").value =
-                settings.contactEmail || "";
+            if ($("cms-email"))
+                $("cms-email").value =
+                    settings.contactEmail || "";
 
-            $("cms-address").value =
-                settings.contactAddress || "";
+            if ($("cms-address"))
+                $("cms-address").value =
+                    settings.contactAddress || "";
 
-            $("cms-hours").value =
-                settings.workingHours || "";
+            if ($("cms-hours"))
+                $("cms-hours").value =
+                    settings.workingHours || "";
         }
 
 
-        /* ADMIN LIST */
+        /* ==========================================
+           ADMIN DISPLAY
+        ========================================== */
 
-        $("admin-users-table")
-            .querySelector("tbody")
-            .innerHTML = `
+        const adminTable =
+            $("admin-users-table")?.querySelector("tbody");
+
+        if (adminTable) {
+
+            adminTable.innerHTML = `
                 <tr>
                     <td>
                         ${escapeHtml(ADMIN_EMAIL)}
@@ -480,16 +482,21 @@ async function loadAdminData() {
                     </td>
                 </tr>
             `;
-
+        }
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "loadAdminData Firestore error:",
+            error
+        );
 
         window.showToast(
-            "Unable to load admin data.",
+            "Failed to load admin data.",
             "error"
         );
+
+        throw error;
     }
 }
 
@@ -498,8 +505,9 @@ async function loadAdminData() {
    PRODUCT TABLE ACTIONS
 ================================================== */
 
-$("admin-products-table")
-    .addEventListener("click", async (event) => {
+$("admin-products-table")?.addEventListener(
+    "click",
+    async (event) => {
 
         const editId =
             event.target.dataset.editProduct;
@@ -507,48 +515,45 @@ $("admin-products-table")
         const deleteId =
             event.target.dataset.deleteProduct;
 
-
         if (editId) {
-
             window.editProduct(editId);
         }
 
-
         if (deleteId) {
-
             await window.deleteDocHandler(
                 "products",
                 deleteId
             );
         }
-
-    });
+    }
+);
 
 
 /* ==================================================
    ORDER TABLE
 ================================================== */
 
-$("admin-orders-table")
-    .addEventListener("click", (event) => {
+$("admin-orders-table")?.addEventListener(
+    "click",
+    (event) => {
 
         const orderId =
             event.target.dataset.viewOrder;
 
         if (orderId) {
-
             window.viewOrder(orderId);
         }
-
-    });
+    }
+);
 
 
 /* ==================================================
    CATEGORY TABLE
 ================================================== */
 
-$("admin-cats-table")
-    .addEventListener("click", async (event) => {
+$("admin-cats-table")?.addEventListener(
+    "click",
+    async (event) => {
 
         const id =
             event.target.dataset.deleteCategory;
@@ -560,8 +565,8 @@ $("admin-cats-table")
                 id
             );
         }
-
-    });
+    }
+);
 
 
 /* ==================================================
@@ -573,7 +578,6 @@ window.openProductModal = () => {
     $("product-form").reset();
 
     $("pm-id").value = "";
-
     $("pm-image-url").value = "";
 
     $("pm-title").textContent =
@@ -600,7 +604,6 @@ window.editProduct = (id) => {
             "error"
         );
     }
-
 
     $("pm-id").value =
         product.id;
@@ -649,7 +652,6 @@ window.openCatModal = async () => {
 
     if (!name || !name.trim()) return;
 
-
     const displayOrder =
         Number(
             prompt(
@@ -658,18 +660,18 @@ window.openCatModal = async () => {
             )
         );
 
-
     if (
         !Number.isSafeInteger(displayOrder) ||
         displayOrder < 0
     ) {
 
-        return window.showToast(
+        window.showToast(
             "Invalid display order.",
             "error"
         );
-    }
 
+        return;
+    }
 
     try {
 
@@ -688,7 +690,6 @@ window.openCatModal = async () => {
             }
         );
 
-
         window.showToast(
             "Category added."
         );
@@ -697,7 +698,10 @@ window.openCatModal = async () => {
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Add category error:",
+            error
+        );
 
         window.showToast(
             "Failed to add category.",
@@ -711,19 +715,18 @@ window.openCatModal = async () => {
    SAVE PRODUCT
 ================================================== */
 
-$("product-form")
-    .addEventListener("submit", async (event) => {
+$("product-form")?.addEventListener(
+    "submit",
+    async (event) => {
 
         event.preventDefault();
 
         if (!isAdminSession) return;
 
-
         const button =
             $("pm-save-btn");
 
         button.disabled = true;
-
 
         try {
 
@@ -846,18 +849,18 @@ $("product-form")
                 .style.display =
                 "none";
 
-
             window.showToast(
                 "Product saved."
             );
 
-
             await loadAdminData();
-
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                "Save product error:",
+                error
+            );
 
             window.showToast(
                 error?.message ||
@@ -869,21 +872,21 @@ $("product-form")
 
             button.disabled = false;
         }
-
-    });
+    }
+);
 
 
 /* ==================================================
    CMS SETTINGS
 ================================================== */
 
-$("cms-settings-form")
-    .addEventListener("submit", async (event) => {
+$("cms-settings-form")?.addEventListener(
+    "submit",
+    async (event) => {
 
         event.preventDefault();
 
         if (!isAdminSession) return;
-
 
         try {
 
@@ -894,7 +897,6 @@ $("cms-settings-form")
                     "main"
                 ),
                 {
-
                     siteName:
                         $("cms-sitename")
                             .value
@@ -925,12 +927,10 @@ $("cms-settings-form")
                             .trim()
                             .slice(0, 200)
                 },
-
                 {
                     merge: true
                 }
             );
-
 
             window.showToast(
                 "Settings saved."
@@ -938,15 +938,18 @@ $("cms-settings-form")
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                "Save settings error:",
+                error
+            );
 
             window.showToast(
                 "Failed to save settings.",
                 "error"
             );
         }
-
-    });
+    }
+);
 
 
 /* ==================================================
@@ -963,15 +966,12 @@ window.deleteDocHandler =
                 "categories"
             ].includes(collectionName)
         ) {
-
             return;
         }
-
 
         if (!confirm("Are you sure?")) {
             return;
         }
-
 
         try {
 
@@ -983,18 +983,18 @@ window.deleteDocHandler =
                 )
             );
 
-
             window.showToast(
                 "Deleted."
             );
 
-
             await loadAdminData();
-
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                "Delete error:",
+                error
+            );
 
             window.showToast(
                 "Delete failed.",
@@ -1021,7 +1021,6 @@ window.viewOrder = (id) => {
         );
     }
 
-
     const lines =
         (order.items || [])
             .map(
@@ -1029,7 +1028,6 @@ window.viewOrder = (id) => {
                     `${item.name || item.productId} — ${item.qty} × ₹${item.unitPrice}`
             )
             .join("\n");
-
 
     alert(
         `Order: ${id}\n` +
@@ -1063,11 +1061,9 @@ document
                     );
 
                 if (modal) {
-
                     modal.style.display =
                         "none";
                 }
             }
         );
-
     });
