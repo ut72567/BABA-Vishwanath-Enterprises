@@ -1,83 +1,183 @@
 rules_version = '2';
 
 service cloud.firestore {
+
   match /databases/{database}/documents {
+
 
     function signedIn() {
       return request.auth != null;
     }
 
+
     function isAdmin() {
-      return signedIn() && request.auth.token.admin == true;
+
+      return signedIn()
+        && request.auth.token.email != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email
+           == "YOUR_ADMIN_EMAIL@gmail.com";
     }
 
-    match /_secure_otps/{challengeId} {
-      allow read, write: if false;
-    }
 
-    match /_otp_rate_limits/{emailHash} {
-      allow read, write: if false;
-    }
-
-    match /_system/{docId} {
-      allow read, write: if false;
-    }
+    /* =========================================
+       ADMIN
+    ========================================= */
 
     match /admins/{email} {
+
       allow read: if isAdmin();
-      allow write: if false;
+
+      allow create, update, delete: if false;
     }
+
+
+    /* =========================================
+       PRODUCTS
+    ========================================= */
 
     match /products/{productId} {
+
       allow read: if true;
-      allow write: if isAdmin();
+
+      allow create, update, delete:
+        if isAdmin();
     }
+
+
+    /* =========================================
+       CATEGORIES
+    ========================================= */
 
     match /categories/{categoryId} {
+
       allow read: if true;
-      allow write: if isAdmin();
+
+      allow create, update, delete:
+        if isAdmin();
     }
+
+
+    /* =========================================
+       MATERIALS
+    ========================================= */
 
     match /materials/{materialId} {
+
       allow read: if true;
-      allow write: if isAdmin();
+
+      allow create, update, delete:
+        if isAdmin();
     }
+
+
+    /* =========================================
+       SLIDERS
+    ========================================= */
 
     match /sliders/{sliderId} {
+
       allow read: if true;
-      allow write: if isAdmin();
+
+      allow create, update, delete:
+        if isAdmin();
     }
+
+
+    /* =========================================
+       SITE SETTINGS
+    ========================================= */
 
     match /siteSettings/{settingsId} {
+
       allow read: if true;
-      allow write: if isAdmin();
+
+      allow create, update, delete:
+        if isAdmin();
     }
+
+
+    /* =========================================
+       ABOUT
+    ========================================= */
 
     match /aboutContent/{contentId} {
+
       allow read: if true;
-      allow write: if isAdmin();
+
+      allow create, update, delete:
+        if isAdmin();
     }
+
+
+    /* =========================================
+       ORDERS
+    ========================================= */
 
     match /orders/{orderId} {
-      allow create, update, delete: if false;
-      allow read: if isAdmin()
-        || (signedIn() && resource.data.customerId == request.auth.uid);
+
+      allow create:
+        if signedIn()
+        && request.resource.data.customerId
+           == request.auth.uid;
+
+      allow read:
+        if isAdmin()
+        || (
+          signedIn()
+          && resource.data.customerId
+             == request.auth.uid
+        );
+
+      allow update, delete:
+        if isAdmin();
     }
+
+
+    /* =========================================
+       ENQUIRIES
+    ========================================= */
 
     match /enquiries/{enquiryId} {
-      allow create: if false;
-      allow read, update, delete: if isAdmin();
+
+      allow create:
+        if true;
+
+      allow read, update, delete:
+        if isAdmin();
     }
+
+
+    /* =========================================
+       USERS
+    ========================================= */
 
     match /users/{userId} {
-      allow create: if signedIn() && request.auth.uid == userId;
-      allow read, update: if isAdmin()
-        || (signedIn() && request.auth.uid == userId);
-      allow delete: if isAdmin();
+
+      allow create:
+        if signedIn()
+        && request.auth.uid == userId;
+
+      allow read, update:
+        if isAdmin()
+        || (
+          signedIn()
+          && request.auth.uid == userId
+        );
+
+      allow delete:
+        if isAdmin();
     }
 
+
+    /* =========================================
+       DENY EVERYTHING ELSE
+    ========================================= */
+
     match /{document=**} {
+
       allow read, write: if false;
     }
+
   }
 }
