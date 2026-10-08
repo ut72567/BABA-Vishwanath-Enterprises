@@ -147,3 +147,8 @@ For Firebase emulator testing, configure the Firebase CLI emulators for Auth, Fi
 - Direct-purchase order tested with a quantity below and above MOQ.
 - Password reset tested.
 - ImgBB upload tested from the admin panel.
+
+Devloped By -
+XNEON Technologies
+
+SRT (Shivansh Ranjan Tripathi)
