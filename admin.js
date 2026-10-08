@@ -810,15 +810,18 @@ $("product-form")?.addEventListener(
 
             const data = {
 
-                name,
-                slug,
-                sku,
-                category,
-                status,
-                price,
-                moq,
-                shortDesc
-            };
+    name,
+    slug,
+    sku,
+    category,
+    status,
+    price,
+    moq,
+    shortDesc,
+
+    // Show this product on Home page
+    isLatest: true
+};
 
 
             if (imageUrl) {
